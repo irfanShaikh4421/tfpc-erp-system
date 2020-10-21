@@ -1,0 +1,126 @@
+`BEGIN
+   IF NEW.stock < 0 THEN
+       IF 
+	   (
+		   IF (TRUE) THEN
+                IF(
+			    (    
+                   (   SELECT SUM(stock) FROM inventory WHERE product_id = NEW.product_id AND project_id = NEW.project_id 
+                    ) + NEW.stock
+                ) >= 0) THEN
+
+		)
+		   
+		   THEN
+			RAISE EXCEPTION 'Not enough stocks. Invalid stock entry';
+		END IF;
+   END IF;
+ 
+   RETURN NEW;
+END;
+
+
+BEGIN 
+
+    IF NEW.stock < 0 THEN
+        IF 
+        (   (
+                (SELECT SUM(stock) FROM inventory WHERE product_id = NEW.product_id AND project_id = NEW.project_id)
+                + NEW.stock
+            ) <= 0
+
+        ) THEN RAISE EXCEPTION 'Not enough stocks. Invalid stock entry';
+
+        END IF;
+   END IF;
+
+   RETURN NEW;
+
+END;
+
+
+
+
+
+
+
+BEGIN 
+
+    IF NEW.stock < 0 THEN
+        IF 
+        (   ((
+                (SELECT SUM(stock) FROM inventory WHERE product_id = NEW.product_id AND project_id = NEW.project_id)
+                + NEW.stock
+            ) <= 0)::boolean
+		 
+			AND
+		 	
+		 	(
+				(SELECT COUNT(*) FROM inventory WHERE product_id = NEW.product_id AND project_id = NEW.project_id)
+				> 0
+			)::int::boolean
+
+        ) THEN RAISE EXCEPTION 'Not enough stocks. Invalid stock entry';
+
+        END IF;
+   END IF;
+
+   RETURN NEW;
+
+END;    
+
+
+ SELECT ( SELECT SUM( CASE WHEN ((SELECT COUNT(*) FROM inventory) < 0) THEN 0 ELSE stock  )) FROM INVENTORY;
+
+
+ SELECT SUM( CASE WHEN stock THEN 0 ELSE stock  ) FROM INVENTORY;
+
+
+
+
+
+ 
+
+
+ CREATE OR REPLACE FUNCTION update_po_productss(
+	products jsonb,
+	po_id_p integer
+)
+RETURNS setof po_products AS $$
+
+DECLARE 
+	r record;
+
+BEGIN
+	RETURN QUERY 
+	WITH pof(id) AS(
+		VALUES(po_id_p)
+	),
+	 normalized_data AS(
+		SELECT quantity, delivered, product_id, project_id, avg_rate, pof.id as po_id
+		FROM jsonb_to_recordset($1) as products(quantity numeric(12,2), delivered numeric(12,2), product_id int, project_id int, avg_rate numeric(12,2))
+		CROSS JOIN pof
+	)
+		
+		INSERT INTO po_products(product_id, project_id, quantity, avg_rate, delivered, po_id)
+		(SELECT product_id, project_id, quantity, avg_rate, delivered, po_id FROM normalized_data)
+		ON CONFLICT 
+			ON CONSTRAINT po_products_key
+		DO
+			UPDATE SET  quantity = Excluded.quantity,
+						avg_rate = Excluded.avg_rate,
+						delivered = CASE WHEN (Excluded.delivered = 0) IS TRUE  THEN po_products.delivered
+										ELSE Excluded.delivered END
+		
+						
+	RETURNING *;
+	
+	
+					
+	
+					
+
+END
+
+$$
+language plpgsql
