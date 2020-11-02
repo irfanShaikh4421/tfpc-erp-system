@@ -1,0 +1,93 @@
+<template>
+    <v-layout row pa-5>
+
+        
+
+        <v-flex xs12 >
+            <h1 class='display-1' style='opacity: .6;'> {{firstCharUpperCase($route.name)}} </h1>
+            <br/><br/>
+        </v-flex>
+
+
+        <v-flex xs12>
+            
+            <data-list endpoint="clients" >
+                <div slot-scope="{ data , error, loading }">
+                    
+                    <v-data-table 
+                        :loading='loading'
+                        :headers='headers'
+                        :items='!loading ? data.results: []'
+                        class='elevation-1'
+                        :style="{ borderRadius: '12px' }"
+                    >   
+
+                        <template  v-slot:item.name="props">
+                            <router-link tag="tr" :to="props.item['client_id']" append class='clickable'>
+                                <td> {{ props.item.name }}</td>
+                            </router-link>
+                        </template>
+
+                    </v-data-table>
+
+                </div>
+            </data-list>
+
+        </v-flex>
+    </v-layout>
+</template>
+
+<script>
+
+import utilities from '@/components/mixins/utilities.js'
+import DataList from '@/components/data/DataList'
+
+export default {
+    name: 'Clients',
+    extends: utilities,
+    components: {
+        DataList
+    },
+
+    data(){
+        return {
+            search: '',
+            headers: [
+                {
+                    text: 'ID',
+                    value: 'client_id'
+                },
+                {
+                    text: 'Name',
+                    value: 'name'
+                },
+                {
+                    text: 'State',
+                    value: 'state'
+                },
+                {
+                    text: 'Address',
+                    value: 'address'
+                },
+                {
+                    text: 'Project Type',
+                    value: 'project_type'
+                }
+            ]
+        }
+    }
+
+}
+</script>
+
+<style>
+
+    .clickable
+    {
+        cursor: pointer;
+        text-decoration: underline ;
+        color: black;
+
+    }
+
+</style>
